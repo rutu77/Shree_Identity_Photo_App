@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+opencv-python<5
+rembg[cpu]
+Pillow
+python-multipart
