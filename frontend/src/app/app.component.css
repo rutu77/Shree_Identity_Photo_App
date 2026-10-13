@@ -1,0 +1,37 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+.studio-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.crop-stage {
+  min-height: 0;
+  flex: 1 1 0%;
+}
+
+.print-preview {
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .app-shell {
+    height: 100vh;
+    min-height: 640px;
+  }
+}
+
+@media (max-height: 640px) and (min-width: 1024px) {
+  .app-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .studio-panel {
+    min-height: 520px;
+  }
+}

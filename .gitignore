@@ -1,0 +1,21 @@
+# Python
+backend/venv/
+backend/build/
+backend/dist/
+backend/*.spec
+backend/__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Node / Electron / Angular
+node_modules/
+frontend/dist/
+frontend/.angular/
+release/
+*.log
+
+# OS
+Thumbs.db
+.DS_Store

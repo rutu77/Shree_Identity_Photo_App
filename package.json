@@ -1,0 +1,38 @@
+{
+  "name": "shree-photo-refinement",
+  "version": "1.0.0",
+  "description": "AI Photo Studio desktop application",
+  "main": "main.js",
+  "scripts": {
+    "build:angular": "npm --prefix frontend run build -- --base-href ./",
+    "start": "npm run build:angular && electron .",
+    "dist:win": "npm run build:angular && electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.shree.photostudio",
+    "productName": "Shree Photo Studio",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "frontend/dist/frontend/browser/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Shree Photo Studio"
+    }
+  }
+}

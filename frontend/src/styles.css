@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f4efe6;
+  color: #1f1a16;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+input[type="range"] {
+  accent-color: #8b1e3f;
+}
