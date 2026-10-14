@@ -1,6 +1,6 @@
-# Shree Photo Studio
+# Shree Identity Photo App
 
-Shree Photo Studio is a simple desktop app for preparing passport-size photo sheets at my shop. It is designed to make a task that usually takes several manual editing and printing steps easier to repeat, even for someone who is not comfortable with complicated computer software.
+Shree Identity Photo App is a simple desktop app for preparing passport-size photo sheets at my shop. It is designed to make a task that usually takes several manual editing and printing steps easier to repeat, even for someone who is not comfortable with complicated computer software.
 <img width="1920" height="1032" alt="fit frame" src="https://github.com/user-attachments/assets/dceb4ddf-42cf-411d-9f96-f33d25704f46" />
 
 ## The problem this project solves
@@ -21,7 +21,7 @@ The app puts the essential steps on one screen. I can position and adjust a cust
 
 ## How to use the app
 
-1. Open Shree Photo Studio and choose or drop in a photo.
+1. Open Shree Identity Photo App and choose or drop in a photo.
 2. Drag the photo to position it in the frame. Scroll to zoom, or use the rotation controls if needed.
 3. Select **Use this crop**, then adjust the image and choose 6 or 8 photos per sheet.
 4. Check the 4 × 6 sheet preview.
