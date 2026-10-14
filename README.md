@@ -1,8 +1,7 @@
 # Shree Photo Studio
 
 Shree Photo Studio is a simple desktop app for preparing passport-size photo sheets at my shop. It is designed to make a task that usually takes several manual editing and printing steps easier to repeat, even for someone who is not comfortable with complicated computer software.
-![Uploading fit frame.png…]()
-
+<img width="1920" height="1032" alt="fit frame" src="https://github.com/user-attachments/assets/dceb4ddf-42cf-411d-9f96-f33d25704f46" />
 
 ## The problem this project solves
 
