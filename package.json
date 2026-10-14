@@ -1,6 +1,6 @@
 {
   "name": "shree-photo-refinement",
-  "version": "1.0.0",
+  "version": "4.0.0",
   "description": "AI Photo Studio desktop application",
   "main": "main.js",
   "scripts": {
@@ -14,14 +14,13 @@
   },
   "build": {
     "appId": "com.shree.photostudio",
-    "productName": "Shree Photo Studio",
+    "productName": "Shree Stationery",
     "asar": true,
     "directories": {
       "output": "release"
     },
     "files": [
       "main.js",
-      "preload.js",
       "package.json",
       "frontend/dist/frontend/browser/**/*"
     ],
@@ -32,7 +31,7 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Shree Photo Studio"
+      "shortcutName": "Shree Stationery"
     }
   }
 }

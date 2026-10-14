@@ -55,4 +55,15 @@ describe('AppComponent', () => {
     expect(app.saturation).toBe(1);
     expect(app.addBorder).toBeTrue();
   });
+
+  it('keeps the print preview in 4x6 proportions and uses landscape for eight photos', () => {
+    const app = TestBed.createComponent(AppComponent).componentInstance;
+
+    expect(app.pageAspectRatio()).toBe('1200 / 1800');
+    app.setCopies(8);
+    expect(app.pageAspectRatio()).toBe('1800 / 1200');
+
+    app.setCopies(6);
+    expect(app.pageAspectRatio()).toBe('1200 / 1800');
+  });
 });

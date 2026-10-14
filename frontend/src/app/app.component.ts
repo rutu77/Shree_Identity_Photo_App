@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ElectronService } from './services/electron.service';
 
 type Crop = { x: number; y: number; width: number; height: number };
 type CropSource = { image: CanvasImageSource; width: number; height: number };
@@ -10,6 +9,9 @@ const PASSPORT_WIDTH = 413;
 const PASSPORT_HEIGHT = 531;
 const PASSPORT_ASPECT_RATIO = PASSPORT_WIDTH / PASSPORT_HEIGHT;
 const ZOOM_STEP = 1.2;
+const PRINT_DPI = 300;
+const SHEET_WIDTH = 1200;
+const SHEET_HEIGHT = 1800;
 
 @Component({
   selector: 'app-root',
@@ -20,15 +22,16 @@ const ZOOM_STEP = 1.2;
 export class AppComponent implements OnDestroy {
   isDragging = false;
   errorMessage = '';
-  printHint = '';
   brightness = 1;
   contrast = 1;
   saturation = 1;
   addBorder = false;
   showGridlines = false;
   copies: 6 | 8 = 6;
+  printInProgress = false;
   zoom = 1;
   rotationDegrees = 0;
+  fineRotation = 0;
   cropConfirmed = false;
   sourceImage: HTMLImageElement | null = null;
   processedUrl = '';
@@ -50,8 +53,6 @@ export class AppComponent implements OnDestroy {
     this.cropCanvas = element?.nativeElement;
     this.drawCropPreview();
   }
-
-  constructor(private readonly electron: ElectronService) {}
 
   ngOnDestroy(): void {
     this.revoke(this.sourceImageUrl);
@@ -75,30 +76,16 @@ export class AppComponent implements OnDestroy {
   }
 
   rotatePhoto(direction: -1 | 1): void {
-    const image = this.sourceImage;
-    if (!image) {
-      return;
-    }
-
     this.rotationDegrees = (this.rotationDegrees + direction * 90 + 360) % 360;
-    const rotatedCanvas = document.createElement('canvas');
-    const swapsDimensions = this.rotationDegrees % 180 !== 0;
-    rotatedCanvas.width = swapsDimensions ? image.naturalHeight : image.naturalWidth;
-    rotatedCanvas.height = swapsDimensions ? image.naturalWidth : image.naturalHeight;
-    const context = rotatedCanvas.getContext('2d');
-    if (!context) {
-      this.errorMessage = 'Could not rotate this photo. Please try again.';
-      this.rotationDegrees = (this.rotationDegrees - direction * 90 + 360) % 360;
-      return;
-    }
-
-    context.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
-    context.rotate((this.rotationDegrees * Math.PI) / 180);
-    context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
-    this.rotatedImage = rotatedCanvas;
+    this.rebuildRotatedImage();
     this.centerX = 0.5;
     this.centerY = 0.5;
-    this.errorMessage = '';
+    this.drawCropPreview();
+  }
+
+  setFineRotation(value: number): void {
+    this.fineRotation = value;
+    this.rebuildRotatedImage();
     this.drawCropPreview();
   }
 
@@ -224,31 +211,40 @@ export class AppComponent implements OnDestroy {
     this.refreshPreviews();
   }
 
-  async printNow(): Promise<void> {
+  async downloadAndPrint(): Promise<void> {
     this.errorMessage = '';
-    this.printHint = '';
     if (!this.gridBlob) {
-      this.errorMessage = 'Please fit a photo first.';
+      this.errorMessage = 'Fit a photo before downloading the print sheet.';
       return;
     }
-
-    const dataUrl = await this.blobToDataUrl(this.gridBlob);
+    this.printInProgress = true;
     try {
-      const sent = await this.electron.printPhoto(dataUrl);
-      if (sent) {
-        this.printHint = 'Print job sent to the printer.';
-        return;
+      if (!await this.renderPreviews() || !this.gridBlob) {
+        throw new Error('The print sheet could not be prepared.');
       }
-    } catch {
-      this.errorMessage = 'The photo could not be printed. Check the printer and try again.';
-      return;
+      this.downloadPrintSheet(this.gridBlob);
+    } catch (error: unknown) {
+      this.errorMessage = `Could not download the print sheet: ${this.errorText(error)}`;
+    } finally {
+      this.printInProgress = false;
     }
+  }
 
+  pageAspectRatio(): string {
+    return this.copies === 8 ? `${SHEET_HEIGHT} / ${SHEET_WIDTH}` : `${SHEET_WIDTH} / ${SHEET_HEIGHT}`;
+  }
+
+  private errorText(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  private downloadPrintSheet(image: Blob): void {
     const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = 'passport-4x6.png';
+    const imageUrl = URL.createObjectURL(image);
+    link.href = imageUrl;
+    link.download = `passport-${this.copies}-photos-4x6.png`;
     link.click();
-    this.printHint = 'Desktop printing is unavailable. The print sheet was saved as a picture.';
+    window.setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
   }
 
   private async handleUpload(file: File): Promise<void> {
@@ -258,7 +254,6 @@ export class AppComponent implements OnDestroy {
     }
 
     this.errorMessage = '';
-    this.printHint = '';
     this.brightness = 1;
     this.contrast = 1;
     this.saturation = 1;
@@ -266,6 +261,7 @@ export class AppComponent implements OnDestroy {
     this.copies = 6;
     this.zoom = 1;
     this.rotationDegrees = 0;
+    this.fineRotation = 0;
     this.rotatedImage = null;
     this.showGridlines = false;
     this.centerX = 0.5;
@@ -321,6 +317,41 @@ export class AppComponent implements OnDestroy {
       y = Math.max(0, Math.min(image.height - height, y));
     }
     return { x, y, width, height };
+  }
+
+  private rebuildRotatedImage(): void {
+    const image = this.sourceImage;
+    if (!image) {
+      return;
+    }
+
+    const angle = this.rotationDegrees + this.fineRotation;
+    if (Math.abs(angle % 360) < 0.001) {
+      this.rotatedImage = null;
+      return;
+    }
+
+    const radians = (angle * Math.PI) / 180;
+    const cosine = Math.abs(Math.cos(radians));
+    const sine = Math.abs(Math.sin(radians));
+    const rotatedCanvas = document.createElement('canvas');
+    rotatedCanvas.width = Math.ceil(
+      image.naturalWidth * cosine + image.naturalHeight * sine,
+    );
+    rotatedCanvas.height = Math.ceil(
+      image.naturalWidth * sine + image.naturalHeight * cosine,
+    );
+    const context = rotatedCanvas.getContext('2d');
+    if (!context) {
+      this.errorMessage = 'Could not rotate this photo. Please try again.';
+      return;
+    }
+
+    context.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+    context.rotate(radians);
+    context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+    this.rotatedImage = rotatedCanvas;
+    this.errorMessage = '';
   }
 
   private setZoom(value: number): void {
@@ -406,10 +437,10 @@ export class AppComponent implements OnDestroy {
     context.restore();
   }
 
-  private async renderPreviews(): Promise<void> {
+  private async renderPreviews(): Promise<boolean> {
     const basePhoto = this.basePhotoCanvas;
     if (!basePhoto) {
-      return;
+      return false;
     }
 
     const version = ++this.renderVersion;
@@ -419,7 +450,7 @@ export class AppComponent implements OnDestroy {
     const photoContext = photoCanvas.getContext('2d');
     if (!photoContext) {
       this.errorMessage = 'Could not adjust this photo. Please try again.';
-      return;
+      return false;
     }
 
     photoContext.filter = `brightness(${this.brightness}) contrast(${this.contrast}) saturate(${this.saturation})`;
@@ -432,12 +463,12 @@ export class AppComponent implements OnDestroy {
     }
 
     const gridCanvas = document.createElement('canvas');
-    gridCanvas.width = this.copies === 8 ? 1800 : 1200;
-    gridCanvas.height = this.copies === 8 ? 1200 : 1800;
+    gridCanvas.width = this.copies === 8 ? SHEET_HEIGHT : SHEET_WIDTH;
+    gridCanvas.height = this.copies === 8 ? SHEET_WIDTH : SHEET_HEIGHT;
     const gridContext = gridCanvas.getContext('2d');
     if (!gridContext) {
       this.errorMessage = 'Could not make the print sheet. Please try again.';
-      return;
+      return false;
     }
     this.drawGrid(gridContext, photoCanvas);
 
@@ -447,14 +478,16 @@ export class AppComponent implements OnDestroy {
         this.canvasToBlob(gridCanvas),
       ]);
       if (version !== this.renderVersion) {
-        return;
+        return false;
       }
       this.replaceUrl('processed', photoBlob);
       this.replaceUrl('grid', gridBlob);
       this.gridBlob = gridBlob;
       this.errorMessage = '';
+      return true;
     } catch {
       this.errorMessage = 'Could not prepare the photo previews. Please try again.';
+      return false;
     }
   }
 
@@ -464,9 +497,9 @@ export class AppComponent implements OnDestroy {
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     const columns = this.copies === 6 ? 2 : 4;
-    const rows = this.copies === 6 ? 3 : 2;
+    const rows = Math.ceil(this.copies / columns);
     const gapMm = this.copies === 8 ? 2.5 : 3;
-    const gap = (gapMm / 25.4) * 300;
+    const gap = (gapMm / 25.4) * PRINT_DPI;
     const totalWidth = columns * photo.width + (columns - 1) * gap;
     const totalHeight = rows * photo.height + (rows - 1) * gap;
     const marginX = (canvas.width - totalWidth) / 2;
