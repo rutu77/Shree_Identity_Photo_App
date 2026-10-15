@@ -1,7 +1,8 @@
 # Shree Identity Photo App
 
 Shree Identity Photo App is a simple desktop app for preparing passport-size photo sheets at my shop. It is designed to make a task that usually takes several manual editing and printing steps easier to repeat, even for someone who is not comfortable with complicated computer software.
-<img width="1920" height="1032" alt="fit frame" src="https://github.com/user-attachments/assets/dceb4ddf-42cf-411d-9f96-f33d25704f46" />
+<img width="1920" height="1031" alt="With_2_buttons" src="https://github.com/user-attachments/assets/d3055bf6-c067-4dbf-8100-b94564c43f7c" />
+
 
 ## The problem this project solves
 
